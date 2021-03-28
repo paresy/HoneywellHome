@@ -1,0 +1,18 @@
+{
+    "id": "{8B72A3DE-768D-39CC-BFF7-253501461CF8}",
+    "name": "Honeywell Cloud",
+    "type": 1,
+    "vendor": "Honeywell",
+    "aliases": [
+        "Honeywell Cloud"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [
+        "{D1652935-46FB-2A72-3FD1-32D2B44EE2BE}"
+    ],
+    "implemented": [
+        "{205C5894-9464-99C0-0921-47647DAF0BD3}", "{A40D97B8-0E11-7116-4B1A-26F20039FC65}"
+    ],
+    "prefix": "HONEYWELL",
+    "url": "https://github.com/Wolbolar/IPSymconHoneywell"
+}

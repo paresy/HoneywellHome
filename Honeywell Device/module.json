@@ -1,0 +1,18 @@
+{
+    "id": "{C2E1624D-B491-3162-8345-D95FE0D6F1DA}",
+    "name": "Honeywell Device",
+    "type": 3,
+    "vendor": "Honeywell",
+    "aliases": [
+        "Honeywell Device"
+    ],
+    "parentRequirements": [
+        "{205C5894-9464-99C0-0921-47647DAF0BD3}"
+    ],
+    "childRequirements": [],
+    "implemented": [
+        "{D1652935-46FB-2A72-3FD1-32D2B44EE2BE}"
+    ],
+    "prefix": "HONEYWELL",
+    "url": "https://github.com/Wolbolar/IPSymconHoneywell"
+}

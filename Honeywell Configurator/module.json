@@ -1,0 +1,16 @@
+{
+    "id": "{B771185C-5ED4-9A6F-FD5F-BA775FBA8FF9}",
+    "name": "Honeywell Configurator",
+    "type": 4,
+    "vendor": "Honeywell",
+    "aliases": [
+        "Honeywell Configurator"
+    ],
+    "parentRequirements": ["{A40D97B8-0E11-7116-4B1A-26F20039FC65}"],
+    "childRequirements": [],
+    "implemented": [
+        "{D1652935-46FB-2A72-3FD1-32D2B44EE2BE}"
+    ],
+    "prefix": "HONEYWELL",
+    "url": "https://github.com/Wolbolar/IPSymconHoneywell"
+}
