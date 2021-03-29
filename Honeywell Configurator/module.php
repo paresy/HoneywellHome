@@ -124,7 +124,9 @@ class HoneywellConfigurator extends IPSModule
                     $device_class = $device['deviceClass'];
                     $device_type = $device['deviceType'];
                     $device_id = $device['deviceID'];
+                    $this->SendDebug('Honeywell device id', strval($device_id), 0);
                     $device_internal_id = $device['deviceInternalID'];
+                    $this->SendDebug('Honeywell device internal id', strval($device_internal_id), 0);
                     $device_name = $device['userDefinedDeviceName'];
 
                     $instanceID = 0;

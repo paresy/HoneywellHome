@@ -340,6 +340,7 @@ class HoneywellCloud extends IPSModule
         if ($location_id != '') {
             $devices = $this->FetchData(self::DEVICES . '?locationId=' . $location_id);
         }
+        $this->SendDataToChildren(json_encode(array("DataID" => "{D1652935-46FB-2A72-3FD1-32D2B44EE2BE}", "Buffer" => $devices)));
         return $devices;
     }
 
@@ -356,6 +357,7 @@ class HoneywellCloud extends IPSModule
 
         $context = stream_context_create($opts);
         $url = $this->GetURL($url);
+        $this->SendDebug('Honeywell fetch data', $url, 0);
         $result = file_get_contents($url, false, $context);
         $http_error = $http_response_header[0];
         $result = $this->GetErrorMessage($http_error, $result);
@@ -379,9 +381,11 @@ class HoneywellCloud extends IPSModule
 
         $location_id = $this->ReadAttributeString('location_id');
         $this->SendDebug('Honeywell Location ID', $location_id, 0);
+        $this->SendDebug('Honeywell device type', $device_type, 0);
+        $this->SendDebug('Honeywell device id', $deviceid, 0);
         $devices = [];
         if ($location_id != '') {
-            $devices = $this->FetchData(self::DEVICES . $device_type . '/' . $deviceid . '?apikey=' . '{APIKEY}' . '&locationId=' . $location_id);
+            $devices = $this->FetchData(self::DEVICES . '/' . $device_type . '/' . $deviceid . '?locationId=' . $location_id);
         }
         return $devices;
     }
@@ -723,7 +727,11 @@ class HoneywellCloud extends IPSModule
      */
     private function GetAllDevicesByTypeData($device_type)
     {
-        $devices = $this->FetchData(self::DEVICES . $device_type);
+        $location_id = $this->ReadAttributeString('location_id');
+        $this->SendDebug('Honeywell Location ID', $location_id, 0);
+        $this->SendDebug('Honeywell device type', $device_type, 0);
+        $this->SendDebug('Honeywell fetch data', self::DEVICES . '/' . $device_type . '?locationId=' . $location_id, 0);
+        $devices = $this->FetchData(self::DEVICES . '/' . $device_type . '?locationId=' . $location_id);
         return $devices;
     }
 

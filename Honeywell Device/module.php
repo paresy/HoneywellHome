@@ -119,7 +119,7 @@ class HoneywellDevice extends IPSModule
             );
 
             $this->SetupVariable(
-                'humidity', $this->Translate('humidity'), '~Humidity', $this->_getPosition(), VARIABLETYPE_INTEGER, false, true
+                'humidity', $this->Translate('humidity'), '~Humidity.F', $this->_getPosition(), VARIABLETYPE_FLOAT, false, true
             );
         }
         // $this->WriteValues();
@@ -210,50 +210,6 @@ class HoneywellDevice extends IPSModule
     }
 
 
-
-
-
-
-
-
-    private function GetValveData($device)
-    {
-        $name = $device['attributes']['name']['value'];
-        $valve_id = explode(':', $device['id']);
-        $id = $valve_id[0];
-        if (isset($valve_id[1])) {
-            $valve_key = $valve_id[1];
-        } else {
-            $valve_key = 'WATERCONTROL';
-        }
-
-        $instance_id = $this->ReadPropertyString('id');
-        if ($instance_id == $id) {
-            $this->SendDebug('Honeywell Valve ' . $id, $name, 0);
-            $this->WriteAttributeString('VALVE_' . $valve_key . '_NAME', $name);
-            if (isset($device['attributes']['activity']['value'])) {
-                $activity = $device['attributes']['activity']['value'];
-                $this->WriteAttributeString('VALVE_WATERCONTROL_ACTIVITY', $activity);
-                $activity_timestamp = $device['attributes']['activity']['timestamp'];
-                $this->WriteAttributeInteger('VALVE_WATERCONTROL_ACTIVITY_TIMESTAMP', $this->CalculateTime($activity_timestamp, 'Device ' . $name . ' activity'));
-            }
-            if (isset($device['attributes']['state']['value'])) {
-                $state = $device['attributes']['state']['value'];
-                $this->WriteAttributeString('VALVE_WATERCONTROL_STATE', $state);
-                $state_timestamp = $device['attributes']['state']['timestamp'];
-                $this->WriteAttributeInteger('VALVE_WATERCONTROL_STATE_TIMESTAMP', $this->CalculateTime($state_timestamp, 'Device ' . $name . ' state'));
-            }
-            if (isset($device['attributes']['lastErrorCode']['value'])) {
-                $lastErrorCode = $device['attributes']['lastErrorCode']['value'];
-                $this->WriteAttributeString('VALVE_WATERCONTROL_ERRORCODE', $lastErrorCode);
-                $lastErrorCode_timestamp = $device['attributes']['lastErrorCode']['timestamp'];
-                $this->WriteAttributeInteger('VALVE_WATERCONTROL_ERRORCODE_TIMESTAMP', $this->CalculateTime($lastErrorCode_timestamp, 'Device ' . $name . ' last error code'));
-            }
-        }
-        return $name;
-    }
-
-
     private function CalculateTime($time_string, $subject)
     {
         $date = new DateTime($time_string);
@@ -274,17 +230,24 @@ class HoneywellDevice extends IPSModule
     private function CheckDeviceData($snapshot)
     {
         $payload = json_decode($snapshot, true);
-        if (!empty($snapshot)) {
-            /*
-            $included = $payload['included'];
-            foreach ($included as $device) {
-                $type = $device['type'];
-                if ($type == 'VALVE') {
-                    $this->GetValveData($device);
+        if (!empty($payload)) {
+            $device_id = $this->ReadPropertyString('device_internal_id');
+            $this->SendDebug('Honeywell device id', strval($device_id), 0);
+            foreach($payload as $device)
+            {
+                $this->SendDebug('Honeywell device id', strval($device['deviceInternalID']), 0);
+                if($device_id == $device['deviceInternalID'])
+                {
+                    $this->SendDebug('Honeywell data', 'data for device id ' .  $device_id, 0);
+                    $currentSensorReadings = $device['currentSensorReadings'];
+                    $temperature = $currentSensorReadings['temperature'];
+                    $humidity = $currentSensorReadings['humidity'];
+                    $this->SendDebug('Honeywell temperature', $temperature, 0);
+                    $this->SetValue('temperature', $temperature);
+                    $this->SendDebug('Honeywell humidity', $humidity, 0);
+                    $this->SetValue('humidity', $humidity);
                 }
             }
-            $this->WriteValues();
-            */
         }
     }
 
@@ -369,6 +332,8 @@ class HoneywellDevice extends IPSModule
 
     public function RequestStatus(string $endpoint)
     {
+        $this->SendDebug('Honeywell Request', 'device type: ' . $this->ReadPropertyString('device_type'), 0);
+        $this->SendDebug('Honeywell Request', 'device internal id: ' . $this->ReadPropertyString('device_internal_id'), 0);
         $data = $this->SendDataToParent(json_encode([
             'DataID' => '{205C5894-9464-99C0-0921-47647DAF0BD3}',
             'Type' => 'GET',
@@ -377,7 +342,7 @@ class HoneywellDevice extends IPSModule
             'device_id' => $this->ReadPropertyString('device_internal_id'),
             'Payload' => ''
         ]));
-        $this->SendDebug('Honeywell Request Response', $data, 0);
+        $this->SendDebug('Honeywell Request Response', json_encode($data), 0);
         return $data;
     }
 
