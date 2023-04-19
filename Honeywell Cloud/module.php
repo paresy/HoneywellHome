@@ -3,19 +3,6 @@ declare(strict_types=1);
 
 class HoneywellCloud extends IPSModule
 {
-    private const SMART_SYSTEM_BASE_URL = 'https://oauth.symcon.cloud/proxy/honeywell/v2';
-
-    // Honeywell smart system API
-    private const DEVICES = '/devices';
-    private const SCHEDULE = '/devices/schedule/'; // GET	Get all devices for a location
-    private const THERMOSTATS = '/devices/thermostats/'; // Get Schedule / Set Schedule
-    private const CHANGE_THERMOSTAT_SETTINGS = '/devices/thermostats/'; // Get Thermostat / Change Thermostat Settings
-    private const FAN = '/fan'; // Change Thermostat Settings
-    private const GROUP = '/group/'; // Get current fan settings / Change fan setting for device
-    private const ROOMS = '/rooms';
-    private const PRIORITY = '/priority'; // 	Get rooms in a group
-    private const LOCATIONS = '/locations'; //  Get Room Priority / Set Room Priority
-
     private $oauthIdentifer = 'honeywell';
 
     public function Create()
@@ -26,40 +13,7 @@ class HoneywellCloud extends IPSModule
         $this->RegisterPropertyInteger("UpdateInterval", 15);
         $this->RegisterTimer("Update", 0, "HONEYWELL_Update(" . $this->InstanceID . ");");
         $this->RegisterAttributeString('Token', '');
-        $this->RegisterAttributeString('locations', '[]');
-        $this->RegisterAttributeString('location_id', '');
-        $this->RegisterAttributeString('location_name', '');
-        $this->RegisterAttributeString('snapshot', '[]');
-        $this->RegisterPropertyInteger("ImportCategoryID", 0);
-        $this->RegisterAttributeString('websocket_url', '');
-        $this->RegisterAttributeBoolean('alternative_url', false);
-        $this->RegisterAttributeBoolean('limit', false);
-
-        //we will wait until the kernel is ready
-        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
     }
-
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
-    {
-        switch ($Message) {
-            case IM_CHANGESTATUS:
-                if ($Data[0] === IS_ACTIVE) {
-                    $this->ApplyChanges();
-                }
-                break;
-
-            case IPS_KERNELMESSAGE:
-                if ($Data[0] === KR_READY) {
-                    $this->ApplyChanges();
-                }
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    /** @noinspection PhpMissingParentCallCommonInspection */
 
     public function ApplyChanges()
     {
@@ -71,13 +25,13 @@ class HoneywellCloud extends IPSModule
         }
 
         $this->RegisterOAuth($this->oauthIdentifer);
-        $Honeywell_interval = $this->ReadPropertyInteger('UpdateInterval');
-        $this->SetHoneywellInterval($Honeywell_interval);
 
-        if ($this->ReadAttributeString('Token') == '') {
-            $this->SetStatus(IS_INACTIVE);
-        } else {
+        if ($this->ReadAttributeString('Token')) {
             $this->SetStatus(IS_ACTIVE);
+            $this->SetTimerInterval('Update', min(15, $this->ReadPropertyInteger('UpdateInterval')) * 60 * 1000);
+        } else {
+            $this->SetStatus(IS_INACTIVE);
+            $this->SetTimerInterval('Update', 0);
         }
     }
 
@@ -104,24 +58,23 @@ class HoneywellCloud extends IPSModule
         }
     }
 
-    private function SetHoneywellInterval($Honeywell_interval): void
-    {
-        if ($Honeywell_interval < 15 && $Honeywell_interval != 0) {
-            $Honeywell_interval = 15;
-        }
-        $interval = $Honeywell_interval * 1000 * 60; // minutes
-        $this->SetTimerInterval('Update', $interval);
-    }
-
     public function Update()
     {
+        $data = $this->FetchData("/locations");
 
-    }
+        $json = json_decode($data);
+        if(isset($json->code)) {
+            echo $json->message;
+            return;
+        }
 
-    public function GetToken()
-    {
-        $token = $this->FetchAccessToken();
-        return $token;
+        $this->SendDebug("Forward", $data, 0);
+
+        $this->SendDataToChildren(json_encode([
+            'DataID'   => '{D1652935-46FB-2A72-3FD1-32D2B44EE2BE}',
+            'Endpoint' => '/locations',
+            'Result'   => $data
+        ]));
     }
 
     private function FetchAccessToken($Token = '', $Expires = 0)
@@ -140,6 +93,8 @@ class HoneywellCloud extends IPSModule
                 }
             }
 
+            $this->SendDebug('FetchAccessToken', $this->ReadAttributeString('Token'), 0);
+
             $this->SendDebug('FetchAccessToken', 'Use Refresh Token to get new Access Token!', 0);
             $options = [
                 'http' => [
@@ -150,7 +105,7 @@ class HoneywellCloud extends IPSModule
             $result = file_get_contents('https://oauth.ipmagic.de/access_token/' . $this->oauthIdentifer, false, $context);
 
             $data = json_decode($result);
-            $this->SendDebug('Symcon Connect Data', $result, 0);
+
             if (!isset($data->token_type) || $data->token_type != 'Bearer') {
                 die('Bearer Token expected');
             }
@@ -186,167 +141,14 @@ class HoneywellCloud extends IPSModule
         return 'https://oauth.ipmagic.de/authorize/' . $this->oauthIdentifer . '?username=' . urlencode(IPS_GetLicensee());
     }
 
-    public function GetLocationsBuffer()
-    {
-        return $this->ReadAttributeString('locations');
-    }
-
-    public function GetConfiguration()
-    {
-
-    }
-
     public function ForwardData($data)
     {
         $data = json_decode($data);
-
-        if (strlen($data->Payload) > 0) {
-            $type = $data->Type;
-            if ($type == 'PUT') {
-                $this->SendDebug('ForwardData', $data->Endpoint . ', Payload: ' . $data->Payload, 0);
-                $response = $this->PutData($data->Endpoint, $data->Payload);
-            } elseif ($type == 'POST') {
-                $this->SendDebug('ForwardData', $data->Endpoint . ', Payload: ' . $data->Payload, 0);
-                $response = $this->PostData($data->Endpoint, $data->Payload);
-            }
-        } else {
-            $this->SendDebug('ForwardData', $data->Endpoint, 0);
-            if ($data->Endpoint == 'location_id') {
-                $response = $this->ReadAttributeString('location_id');
-            } elseif ($data->Endpoint == 'snapshot') {
-                $response = $this->RequestSnapshot();
-            } elseif ($data->Endpoint == 'GetSpecificDeviceByIDData') {
-                $device_type = $data->device_type;
-                $deviceid = $data->device_id;
-                $response = $this->GetSpecificDeviceByIDData($device_type, $deviceid);
-            } elseif ($data->Endpoint == 'snapshotbuffer') {
-                $response = $this->RequestSnapshotBuffer();
-            } elseif ($data->Endpoint == 'Get_All_Locations') {
-                $response = $this->Get_All_Locations();
-            } elseif ($data->Endpoint == 'token') {
-                $response = $this->CheckToken();
-            }
-        }
-        return $response;
+        return $this->FetchData($data->Endpoint);
     }
 
-    private function PutData($url, $content)
+    private function FetchData($endpoint)
     {
-        $this->SendDebug("AT", $this->FetchAccessToken(), 0);
-        $opts = array(
-            "http" => array(
-                "method" => "PUT",
-                "header" => "Authorization: Bearer " . $this->FetchAccessToken() . "\r\n" . 'Content-Length: ' . strlen($content) . "\r\n",
-                'content' => $content,
-                "ignore_errors" => true
-            )
-        );
-        $context = stream_context_create($opts);
-        $url = $this->GetURL($url);
-        $result = file_get_contents($url, false, $context);
-        $http_error = $http_response_header[0];
-        $result = $this->GetErrorMessage($http_error, $result);
-        return $result;
-    }
-
-    private function GetURL($url)
-    {
-        return self::SMART_SYSTEM_BASE_URL . $url;
-    }
-
-    private function GetErrorMessage($http_error, $result)
-    {
-        $response = $result;
-        if ((strpos($http_error, '200') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Success. Response Body: ' . $result, 0);
-        } elseif ((strpos($http_error, '201') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Success. CreatedResponse Body: ' . $result, 0);
-        } elseif ((strpos($http_error, '401') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Failure, user could not be authenticated. Authorization-Provider or X-Api-Key header or Beaerer Token missing or invalid. Response Body: ' . $result, 0);
-            $response = false;
-        } elseif ((strpos($http_error, '404') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Failure, location not found. Response Body: ' . $result, 0);
-            $response = false;
-        } elseif ((strpos($http_error, '500') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Failure, internal error. Response Body: ' . $result, 0);
-            $response = false;
-        } elseif ((strpos($http_error, '502') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Failure, backend error. Response Body: ' . $result, 0);
-            $response = false;
-        } elseif ((strpos($http_error, '415') > 0)) {
-            $this->SendDebug('HTTP Response Header', 'Unsupported Media Type. Response Body: ' . $result, 0);
-            $response = false;
-        } else {
-            $this->SendDebug('HTTP Response Header', $http_error . ' Response Body: ' . $result, 0);
-            $response = false;
-        }
-
-        if ($result == '{"message":"Limit Exceeded"}') {
-            $this->SendDebug('Honeywell API', 'Limit Exceeded', 0);
-        }
-        return $response;
-    }
-
-    // Honeywell API
-
-    private function PostData($url, $content)
-    {
-        $this->SendDebug("AT", $this->FetchAccessToken(), 0);
-        $opts = array(
-            "http" => array(
-                "method" => "POST",
-                "header" => "Authorization: Bearer " . $this->FetchAccessToken() . "\r\n" . 'Content-Length: ' . strlen($content) . "\r\n",
-                'content' => $content,
-                "ignore_errors" => true
-            )
-        );
-        $context = stream_context_create($opts);
-        $url = $this->GetURL($url);
-        $result = file_get_contents($url, false, $context);
-        $http_error = $http_response_header[0];
-        $result = $this->GetErrorMessage($http_error, $result);
-        return $result;
-    }
-
-    /** Get Devices for Snapshot
-     * @return bool|false|string
-     */
-    public function RequestSnapshot()
-    {
-        $location_id = $this->ReadAttributeString('location_id');
-        if ($location_id != '') {
-            $snapshot = $this->GetAllDevices();
-        } else {
-            $snapshot = '[]';
-        }
-        if ($snapshot === false) {
-            $this->SendDebug('Honeywell Snapshot', 'Could not get snapshot', 0);
-            $snapshot = '[]';
-        } else {
-            $this->SendDebug('Honeywell Snapshot', $snapshot, 0);
-            $this->WriteAttributeString('snapshot', $snapshot);
-        }
-        return $snapshot;
-    }
-
-    /** Get all devices for a location
-     * @return array
-     */
-    public function GetAllDevices()
-    {
-        $location_id = $this->ReadAttributeString('location_id');
-        $this->SendDebug('Honeywell Location ID', $location_id, 0);
-        $devices = [];
-        if ($location_id != '') {
-            $devices = $this->FetchData(self::DEVICES . '?locationId=' . $location_id);
-        }
-        $this->SendDataToChildren(json_encode(array("DataID" => "{D1652935-46FB-2A72-3FD1-32D2B44EE2BE}", "Buffer" => $devices)));
-        return $devices;
-    }
-
-    private function FetchData($url)
-    {
-        $this->SendDebug("AT", $this->FetchAccessToken(), 0);
         $opts = array(
             "http" => array(
                 "method" => "GET",
@@ -355,233 +157,23 @@ class HoneywellCloud extends IPSModule
             )
         );
 
+        $url = 'https://oauth.ipmagic.de/proxy/honeywell/v2' . $endpoint;
+        $this->SendDebug('Fetch', $url, 0);
+
         $context = stream_context_create($opts);
-        $url = $this->GetURL($url);
-        $this->SendDebug('Honeywell fetch data', $url, 0);
         $result = file_get_contents($url, false, $context);
-        $http_error = $http_response_header[0];
-        $result = $this->GetErrorMessage($http_error, $result);
         return $result;
     }
 
-    /**  Get a Specific Device by ID
-     * @return bool
-     */
-    private function GetSpecificDeviceByIDData($device_type, $deviceid)
-    {
-        if ($device_type == 'Water Leak Detector') {
-            $device_type = 'waterLeakDetectors';
-        }
-        if ($device_type == 'thermostats') {
-            $device_type = 'thermostats';
-        }
-        if ($device_type == 'cameras') {
-            $device_type = 'cameras';
-        }
-
-        $location_id = $this->ReadAttributeString('location_id');
-        $this->SendDebug('Honeywell Location ID', $location_id, 0);
-        $this->SendDebug('Honeywell device type', $device_type, 0);
-        $this->SendDebug('Honeywell device id', $deviceid, 0);
-        $devices = [];
-        if ($location_id != '') {
-            $devices = $this->FetchData(self::DEVICES . '/' . $device_type . '/' . $deviceid . '?locationId=' . $location_id);
-        }
-        return $devices;
-    }
-
-    public function RequestSnapshotBuffer()
-    {
-        //$this->WriteAttributeString('snapshot', '[]');
-
-        $snapshot = $this->ReadAttributeString('snapshot');
-        $this->SendDebug('Honeywell Snapshot Buffer', $snapshot, 0);
-        if ($snapshot == '[]') {
-            $snapshot = $this->RequestSnapshot();
-            $this->SendDebug('Honeywell Request Snapshot', $snapshot, 0);
-        }
-        return $snapshot;
-    }
-
-    /**  Get all Locations
-     * @return bool
-     */
-    public function Get_All_Locations()
-    {
-        $locations = $this->FetchData(self::LOCATIONS);
-        $locations = json_decode($locations, true);
-        if ($locations === false) {
-            $this->SendDebug('Honeywell Locations', 'Could not get locations', 0);
-        } else {
-            $this->SendDebug('Honeywell Locations', json_encode($locations), 0);
-            $this->WriteAttributeString('locations', json_encode($locations));
-
-            $location_id = $locations[0]['locationID'];
-            $this->SendDebug('Honeywell Location ID', $location_id, 0);
-            $this->WriteAttributeString('location_id', $location_id);
-        }
-        return $locations;
-    }
-
-    public function CheckToken()
-    {
-        $token = $this->ReadAttributeString('Token');
-        return $token;
-    }
-
-    /**
-     * build configuration form
-     * @return string
-     */
     public function GetConfigurationForm()
     {
-        // return current form
-        $Form = json_encode([
-            'elements' => $this->FormHead(),
-            'actions' => $this->FormActions(),
-            'status' => $this->FormStatus()
-        ]);
-        $this->SendDebug('FORM', $Form, 0);
-        $this->SendDebug('FORM', json_last_error_msg(), 0);
-        return $Form;
+        $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
+        $form['actions'][1]['enabled'] = $this->ReadAttributeString('Token') !== "";
+        return json_encode($form);
     }
 
-    /**
-     * return form configurations on configuration step
-     * @return array
-     */
-    protected function FormHead()
-    {
-        $visibility_register = false;
-        //Check Honeywell connection
-        if ($this->ReadAttributeString('Token') == '') {
-            $visibility_register = true;
-        }
-
-        $form = [
-            [
-                'type' => 'Label',
-                'visible' => $visibility_register,
-                'caption' => 'Honeywell: Please register with your Honeywell account!'
-            ],
-            [
-                'type' => 'Button',
-                'visible' => true,
-                'caption' => 'Register',
-                'onClick' => 'echo HONEYWELL_Register($id);'
-            ],
-            [
-                'type' => 'Label',
-                'visible' => true,
-                'label' => 'Update interval in minutes (minimum 15 minutes):'
-            ],
-            [
-                'name' => 'UpdateInterval',
-                'visible' => true,
-                'type' => 'IntervalBox',
-                'caption' => 'minutes'
-            ]
-        ];
-        return $form;
-    }
-
-    /**
-     * return form actions by token
-     * @return array
-     */
-    protected function FormActions()
-    {
-        //Check Connect availability
-        $ids = IPS_GetInstanceListByModuleID('{9486D575-BE8C-4ED8-B5B5-20930E26DE6F}');
-        if (IPS_GetInstance($ids[0])['InstanceStatus'] != IS_ACTIVE) {
-            $visibility_label1 = true;
-            $visibility_label2 = false;
-        } else {
-            $visibility_label1 = false;
-            $visibility_label2 = true;
-        }
-        $location_id = $this->ReadAttributeString('location_id');
-        $location_name = $this->ReadAttributeString('location_name');
-        if ($location_id != '') {
-            $visibility_config = true;
-        } else {
-            $visibility_config = false;
-        }
-        $form = [
-            [
-                'type' => 'Label',
-                'visible' => $visibility_label1,
-                'caption' => 'Error: Symcon Connect is not active!'
-            ],
-            [
-                'type' => 'Label',
-                'visible' => $visibility_label2,
-                'caption' => 'Status: Symcon Connect is OK!'
-            ],
-            [
-                'type' => 'Label',
-                'visible' => $visibility_config,
-                'caption' => $this->Translate('Honeywell Location: ') . $location_name
-            ],
-            [
-                'type' => 'Label',
-                'visible' => true,
-                'caption' => 'Read Honeywell configuration:'
-            ],
-            [
-                'type' => 'Button',
-                'visible' => true,
-                'caption' => 'Read configuration',
-                'onClick' => 'HONEYWELL_GetConfiguration($id);'
-            ]
-        ];
-        return $form;
-    }
-
-    /**
-     * return from status
-     * @return array
-     */
-    protected function FormStatus()
-    {
-        $form = [
-            [
-                'code' => IS_CREATING,
-                'icon' => 'inactive',
-                'caption' => 'Creating instance.'
-            ],
-            [
-                'code' => IS_ACTIVE,
-                'icon' => 'active',
-                'caption' => 'configuration valid.'
-            ],
-            [
-                'code' => IS_INACTIVE,
-                'icon' => 'inactive',
-                'caption' => 'interface closed.'
-            ],
-            [
-                'code' => 201,
-                'icon' => 'inactive',
-                'caption' => 'Please follow the instructions.'
-            ],
-            [
-                'code' => 202,
-                'icon' => 'error',
-                'caption' => 'no category selected.'
-            ]
-        ];
-
-        return $form;
-    }
-
-    /**
-     * This function will be called by the OAuth control. Visibility should be protected!
-     */
     protected function ProcessOAuthData()
     {
-
-        // <REDIRECT_URI>?code=<AUTHORIZATION_CODE>&state=<STATE>
         if ($_SERVER['REQUEST_METHOD'] == 'GET') {
             if (!isset($_GET['code'])) {
                 die('Authorization Code expected');
@@ -603,11 +195,6 @@ class HoneywellCloud extends IPSModule
         }
     }
 
-    /** Exchange our Authentication Code for a permanent Refresh Token and a temporary Access Token
-     * @param $code
-     *
-     * @return mixed
-     */
     private function FetchRefreshToken($code)
     {
         $this->SendDebug('FetchRefreshToken', 'Use Authentication Code to get our precious Refresh Token!', 0);
@@ -630,130 +217,5 @@ class HoneywellCloud extends IPSModule
 
         //Return RefreshToken
         return $data->refresh_token;
-    }
-
-    /**  Set Schedule
-     * @return bool
-     */
-    private function SetScheduleData($deviceid)
-    {
-        $postfields = '';
-        $response = $this->PostData(self::SCHEDULE . $deviceid, $postfields);
-        return $response;
-    }
-
-    /**  Get Schedule
-     * @return bool
-     */
-    private function GetScheduleData($deviceid)
-    {
-        $devices = $this->FetchData(self::SCHEDULE . $deviceid);
-        return $devices;
-    }
-
-    /**  Change Thermostat Settings
-     * @return bool
-     */
-    private function ChangeThermostatSettingsData($deviceid)
-    {
-        $postfields = '';
-        $response = $this->PostData(self::THERMOSTATS . $deviceid, $postfields);
-        return $response;
-    }
-
-    /**  Get Thermostat
-     * @return bool
-     */
-    private function GetThermostatData($deviceid)
-    {
-        $devices = $this->FetchData(self::THERMOSTATS . $deviceid);
-        return $devices;
-    }
-
-    /** Change fan setting
-     * @return bool
-     */
-    private function ChangeFanSettingData($deviceid)
-    {
-        $postfields = '';
-        $response = $this->PostData(self::THERMOSTATS . $deviceid . self::FAN, $postfields);
-        return $response;
-    }
-
-    /**  Get current fan settings
-     * @return bool
-     */
-    private function GetCurrentFanSettingsData($deviceid)
-    {
-        $devices = $this->FetchData(self::THERMOSTATS . $deviceid . self::FAN);
-        return $devices;
-    }
-
-    /**  Get rooms in a group
-     * @return bool
-     */
-    private function GetRoomsData($deviceid, $groupid)
-    {
-        $devices = $this->FetchData(self::THERMOSTATS . $deviceid . self::GROUP . $groupid . self::ROOMS);
-        return $devices;
-    }
-
-
-    /***********************************************************
-     * Configuration Form
-     ***********************************************************/
-
-    /** Set Room Priority
-     * @return bool
-     */
-    private function SetRoomPriorityData($deviceid)
-    {
-        $postfields = '';
-        $response = $this->PostData(self::THERMOSTATS . $deviceid . self::PRIORITY, $postfields);
-        return $response;
-    }
-
-    /**  Get Room Priority
-     * @return bool
-     */
-    private function GetRoomPriorityData($deviceid)
-    {
-        $devices = $this->FetchData(self::THERMOSTATS . $deviceid . self::PRIORITY);
-        return $devices;
-    }
-
-    /**  Get all Devices by Type
-     * @return bool
-     */
-    private function GetAllDevicesByTypeData($device_type)
-    {
-        $location_id = $this->ReadAttributeString('location_id');
-        $this->SendDebug('Honeywell Location ID', $location_id, 0);
-        $this->SendDebug('Honeywell device type', $device_type, 0);
-        $this->SendDebug('Honeywell fetch data', self::DEVICES . '/' . $device_type . '?locationId=' . $location_id, 0);
-        $devices = $this->FetchData(self::DEVICES . '/' . $device_type . '?locationId=' . $location_id);
-        return $devices;
-    }
-
-    /** List Locations
-     * @return bool|false|string
-     */
-    private function RequestLocations()
-    {
-        $location_id = false;
-        $state_location = $this->Get_All_Locations();
-        if ($state_location === false) {
-            $this->SendDebug('Honeywell Locations', 'Could not get location', 0);
-        } else {
-            $this->SendDebug('Honeywell Locations', strval($state_location), 0);
-            $location_data = json_decode($state_location, true);
-            $location_id = $location_data[0]['locationID'];
-            $location_name = $location_data[0]['name'];
-            $this->SendDebug('Honeywell Location Name', $location_name, 0);
-            $this->WriteAttributeString('location_name', $location_name);
-            $this->SendDebug('Honeywell Location ID', $location_id, 0);
-            $this->WriteAttributeString('location_id', $location_id);
-        }
-        return $location_id;
     }
 }

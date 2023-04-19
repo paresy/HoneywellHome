@@ -20,7 +20,7 @@ Steuerung von Honeywell Geräten über die Honeywell Home API.
 
 ## 2. Voraussetzungen
 
- - IPS 5.2
+ - IP-Symcon 6.0+
  - Honeywell Benutzername and Honeywell für Honeywell Home
  - IP-Symcon Connect
 
@@ -31,7 +31,7 @@ Steuerung von Honeywell Geräten über die Honeywell Home API.
 Die Webconsole von IP-Symcon mit _http://{IP-Symcon IP}:3777/console/_ öffnen. 
 
 
-Anschließend oben rechts auf das Symbol für den Modulstore (IP-Symcon > 5.2) klicken
+Anschließend oben rechts auf das Symbol für den Modulstore klicken
 
 ![Store](img/store_icon.png?raw=true "open store")
 
@@ -93,26 +93,3 @@ Ein einzelnes Gerät kann man durch markieren auf das Gerät und ein Druck auf d
 
 ### e. Einrichtung der Geräteinstanz
 Eine manuelle Einrichtung eines Gerätemoduls ist nicht erforderlich, das erfolgt über den Konfigurator. In dem Geräte-Modul ist gegebenenfalls nur das Abfrage-Intervall anzupassen, die anderen Felder, insbesondere die Seriennummer (diese ist die Identifikation des Gerätes) und die Geräte-Typ-ID (diese steuert, welche Variablen angelegt werden) sind vom Konfigurator vorgegeben.
-
-
-## 4. Funktionsreferenz
-
-
-  
-
-## 5. Konfiguration:
-
-
-
-## 6. Anhang
-
-###  GUIDs und Datenaustausch:
-
-#### Honeywell Cloud:
-
-GUID: `{8B72A3DE-768D-39CC-BFF7-253501461CF8}` 
-
-
-#### Honeywell Device:
-
-GUID: `{C2E1624D-B491-3162-8345-D95FE0D6F1DA}` 

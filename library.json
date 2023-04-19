@@ -1,12 +1,12 @@
 {
     "id": "{BDBD9C4E-5F5C-72BF-08E3-8D8F9DEFA7C7}",
-    "author": "Fonzo",
+    "author": "Symcon GmbH",
     "name": "Honeywell Home",
-    "url": "https://github.com/Wolbolar/IPSymconHoneywell",
+    "url": "",
     "compatibility": {
-        "version": "5.5"
+        "version": "6.0"
     },
-    "version": "0.1",
+    "version": "1.0",
     "build": 5,
     "date": 0
 }

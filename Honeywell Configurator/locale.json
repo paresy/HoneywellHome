@@ -1,26 +1,8 @@
 {
   "translations": {
     "de": {
-      "Register": "Registrieren",
-      "Honeywell: Please register with your Honeywell account!": "Bitte mit dem Honeywell Benutzerkonto registrieren!",
-      "Status: Symcon Connect is OK!": "Status: Symcon Connect ist OK!",
-      "Error: Symcon Connect is not active!": "Error: Symcon Connect is nicht aktiv!",
-      "category for Honeywell devices": "Kategorie für Honeywell Geräte",
-      "category Honeywell devices": "Kategorie Honeywell Geräte",
-      "name": "Name",
-      "device type": "Geräte Typ",
-      "device class": "Geräte Klasse",
-      "Water Leak Detector": "Wasserleck Detektor",
-      "LeakDetector": "Leckdetektor",
-      "Read Honeywell configuration:": "Honeywell Konfiguration auslesen:",
-      "Read configuration": "Konfiguration auslesen",
-      "Creating instance.": "Die Instanz wird erstellt.",
-      "interface closed.": "Verbindung geschlossen.",
-      "Please follow the instructions.": "Bitte der Anleitung folgen",
-      "no category selected.": "Keine Kategorie ausgewählt",
-      "choose category for import.": "Kategorie zum Import auswählen.",
-      "configuration valid.": "Konfigurator ist ok."
+      "Devices": "Geräte",
+      "Refresh":  "Aktualisieren"
     }
   }
 }
-

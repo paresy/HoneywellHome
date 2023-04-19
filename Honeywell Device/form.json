@@ -1,0 +1,15 @@
+{
+  "elements": [
+    {
+      "type": "ValidationTextBox",
+      "name": "DeviceID",
+      "caption": "DeviceID"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Label",
+      "caption": "Please use the 'Update' Button in the Cloud instance to update all data"
+    }
+  ]
+}

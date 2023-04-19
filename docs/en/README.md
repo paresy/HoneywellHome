@@ -21,7 +21,7 @@ Control Honeywell devices via Honeywell Home API.
 	  
 ## 2. Requirements
 
- - IPS 5.2
+ - IP-Symcon 6.0+
  - Honeywell Home Account
  - IP-Symcon Connect
 
@@ -31,7 +31,7 @@ Control Honeywell devices via Honeywell Home API.
 
 Open the IP Console's web console with _http://{IP-Symcon IP}:3777/console/_.
 
-Then click on the module store (IP-Symcon > 5.2) icon in the upper right corner.
+Then click on the module store icon in the upper right corner.
 
 ![Store](img/store_icon.png?raw=true "open store")
 
@@ -91,26 +91,3 @@ A single device can be created by marking the device and pressing the _Create_ b
 
 ### e. Device instance setup
 A manual setup of a device module is not necessary, this is done via the configurator. If necessary, only the query interval has to be adjusted in the device module; the other fields, in particular the serial number (this is the identification of the device) and the device type ID (which controls which variables are created) are specified by the configurator.
-
-
-## 4. Function reference
-
-
-
-## 5. Configuration:
-
-
-
-
-## 6. Annnex
-
-###  GUIDs und Data Flow:
-
-#### Honeywell Cloud:
-
-GUID: `{8B72A3DE-768D-39CC-BFF7-253501461CF8}` 
-
-
-#### Honeywell Device:
-
-GUID: `{C2E1624D-B491-3162-8345-D95FE0D6F1DA}` 

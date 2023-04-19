@@ -1,15 +1,8 @@
 {
   "translations": {
     "de": {
-      "serial number: ": "Seriennummer: ",
-      "type: ": "Typ: ",
-      "Update interval in seconds:": "Aktualisierungsinterval in Sekunden",
-      "seconds": "Sekunden",
-      "name": "Name",
-      "humidity": "Luftfeuchtigkeit",
-      "temperature": "Temperatur",
-      "Honeywell device created.": "Honeywell Gerät erstellt.",
-      "This device can only created by the Honeywell configurator, please use the Honeywell configurator for creating Honeywell devices.": "Dieses Gerät kann nur durch einen Honeywell Konfiguartor erzeugt werden und nicht manuell, bitte benutzten Sie den Honeywell Konfigurator zum anlegen von einem neuen Gerät."
+      "DeviceID": "GeräteID",
+      "Please use the 'Update' Button in the Cloud instance to update all data": "Bitte nutzen Sie den 'Daten abfragen' Button in der Cloud Instanz um alle Gerätedaten zu abzufragen."
     }
   }
 }

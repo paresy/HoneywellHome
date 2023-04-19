@@ -1,0 +1,26 @@
+{
+  "actions": [
+    {
+      "type": "Button",
+      "caption": "Refresh",
+      "onClick": "HONEYWELL_Update($id);"
+    },
+    {
+      "type": "Configurator",
+      "caption": "Devices",
+      "columns": [{
+        "caption": "ID",
+        "name": "ID",
+        "width": "350px"
+      },{
+        "caption": "Name",
+        "name": "Name",
+        "width": "auto"
+      }, {
+        "caption": "Type",
+        "name": "Type",
+        "width": "200px"
+      }]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "elements": [
+    {
+      "name": "UpdateInterval",
+      "visible": true,
+      "type": "NumberSpinner",
+      "minimum": 10,
+      "caption": "Interval",
+      "suffix": "minutes"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Button",
+      "caption": "Register",
+      "onClick": "echo HONEYWELL_Register($id);"
+    },
+    {
+      "type": "Button",
+      "caption": "Update",
+      "onClick": "HONEYWELL_Update($id);"
+    }
+  ]
+}
