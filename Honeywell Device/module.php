@@ -52,7 +52,9 @@ class HoneywellDevice extends IPSModule
 
         if (isset($json["time"])) {
             $this->RegisterVariableInteger("time", "time", "~UnixTimestamp", 0);
-            $this->SetValue("time", strtotime($json["time"]));
+            $utc = new DateTimeZone('UTC');
+            $dt = new DateTime($json["time"], $utc);
+            $this->SetValue("time", $dt->format('U'));
         }
 
         $parse($json);
