@@ -34,7 +34,9 @@ class HoneywellConfigurator extends IPSModule
         $getInstanceID = function($deviceID) {
             $ids = IPS_GetInstanceListByModuleID('{C2E1624D-B491-3162-8345-D95FE0D6F1DA}');
             foreach($ids as $id) {
-
+                if (IPS_GetProperty($id, "DeviceID") == $deviceID) {
+                    return $id;
+                }
             }
             return 0;
         };
@@ -52,7 +54,8 @@ class HoneywellConfigurator extends IPSModule
                         "moduleID" => "{C2E1624D-B491-3162-8345-D95FE0D6F1DA}",
                         "configuration" => [
                             "DeviceID" => $device["deviceID"]
-                        ]
+                        ],
+                        "name" => $device["userDefinedDeviceName"],
                     ]
                 ];
             }
