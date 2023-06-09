@@ -20,12 +20,6 @@ class HoneywellCloud extends IPSModule
         //Never delete this line!
         parent::ApplyChanges();
 
-        if (IPS_GetKernelRunlevel() !== KR_READY) {
-            return;
-        }
-
-        $this->RegisterOAuth($this->oauthIdentifer);
-
         if ($this->ReadAttributeString('Token')) {
             $this->SetStatus(IS_ACTIVE);
             $this->SetTimerInterval('Update', min(15, $this->ReadPropertyInteger('UpdateInterval')) * 60 * 1000);
@@ -33,6 +27,12 @@ class HoneywellCloud extends IPSModule
             $this->SetStatus(IS_INACTIVE);
             $this->SetTimerInterval('Update', 0);
         }
+
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
+
+        $this->RegisterOAuth($this->oauthIdentifer);
     }
 
     private function RegisterOAuth($WebOAuth)
