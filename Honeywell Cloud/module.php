@@ -185,8 +185,7 @@ class HoneywellCloud extends IPSModule
 
             $this->WriteAttributeString('Token', $token);
 
-            //This will enforce a reload of the property page. change this in the future, when we have more dynamic forms
-            IPS_ApplyChanges($this->InstanceID);
+            $this->ReloadForm();
         } else {
 
             //Just print raw post data!

@@ -34,22 +34,27 @@ class HoneywellConfigurator extends IPSModule
         $getInstanceID = function($deviceID) {
             $ids = IPS_GetInstanceListByModuleID('{C2E1624D-B491-3162-8345-D95FE0D6F1DA}');
             foreach($ids as $id) {
-                if (IPS_GetProperty($id, "DeviceID") == $deviceID) {
-                    return $id;
+                if (IPS_GetInstance($id)['ConnectionID'] == IPS_GetInstance($this->InstanceID)['ConnectionID']) {
+                    if (IPS_GetProperty($id, "DeviceID") == $deviceID) {
+                        return $id;
+                    }
                 }
             }
             return 0;
         };
 
+        $instanceIDs = [];
+
         $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
         $json = json_decode($this->ReadAttributeString('Snapshot'), true);
         foreach($json as $site) {
             foreach ($site["devices"] as $device) {
+                $instanceID = $getInstanceID($device["deviceID"]);
                 $form["actions"][1]["values"][] = [
                     "ID" => $device["deviceID"],
                     "Name" => $device["userDefinedDeviceName"],
                     "Type" => $device["deviceType"],
-                    "instanceID" => $getInstanceID($device["deviceID"]),
+                    "instanceID" => $instanceID,
                     "create" => [
                         "moduleID" => "{C2E1624D-B491-3162-8345-D95FE0D6F1DA}",
                         "configuration" => [
@@ -58,8 +63,26 @@ class HoneywellConfigurator extends IPSModule
                         "name" => $device["userDefinedDeviceName"],
                     ]
                 ];
+                if ($instanceID > 0) {
+                    $instanceIDs[] = $instanceID;
+                }
             }
         }
+
+        $ids = IPS_GetInstanceListByModuleID('{C2E1624D-B491-3162-8345-D95FE0D6F1DA}');
+        foreach($ids as $id) {
+            if (IPS_GetInstance($id)['ConnectionID'] == IPS_GetInstance($this->InstanceID)['ConnectionID']) {
+                if (!in_array($id, $instanceIDs)) {
+                    $form["actions"][1]["values"][] = [
+                        "ID" => IPS_GetProperty($id, "DeviceID"),
+                        "Name" => IPS_GetName($id),
+                        "Type" => '',
+                        "instanceID" => $id,
+                    ];
+                }
+            }
+        }
+
         return json_encode($form);
     }
 }
